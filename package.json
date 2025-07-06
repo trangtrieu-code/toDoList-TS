@@ -1,0 +1,20 @@
+{
+  "name": "todolist-typescript",
+  "version": "1.0.0",
+  "description": "A simple TodoList application built with TypeScript",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "npx http-server . -p 3000",
+    "dev": "npm run watch & npm run start"
+  },
+  "keywords": ["typescript", "todolist", "frontend"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "http-server": "^14.1.1"
+  }
+}
