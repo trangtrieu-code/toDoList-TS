@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TodoList - TypeScript</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <h1 class="display-4 text-primary">📝 TodoList</h1>
+                    <p class="text-muted">Built with TypeScript</p>
+                </div>
+
+                <!-- Add Todo Form -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form id="todoForm" class="d-flex gap-2">
+                            <input 
+                                type="text" 
+                                id="todoInput" 
+                                class="form-control" 
+                                placeholder="Add a new todo..." 
+                                required
+                                autocomplete="off"
+                            >
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-lg"></i> Add
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Todo Stats -->
+                <div class="row mb-3">
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="h5 mb-0" id="totalTodos">0</div>
+                            <small class="text-muted">Total</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="h5 mb-0 text-success" id="completedTodos">0</div>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-center">
+                            <div class="h5 mb-0 text-warning" id="pendingTodos">0</div>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <button type="button" class="btn btn-outline-primary btn-sm filter-btn active" data-filter="all">
+                        All
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-sm filter-btn" data-filter="completed">
+                        Completed
+                    </button>
+                    <button type="button" class="btn btn-outline-warning btn-sm filter-btn" data-filter="pending">
+                        Pending
+                    </button>
+                </div>
+
+                <!-- Todo List -->
+                <div class="card">
+                    <div class="card-body p-0">
+                        <ul id="todoList" class="list-group list-group-flush">
+                            <!-- Todos will be dynamically added here -->
+                        </ul>
+                        <div id="emptyState" class="text-center py-5 text-muted">
+                            <div class="h4">📝</div>
+                            <p>No todos yet. Add one above!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clear Completed Button -->
+                <div class="text-center mt-3">
+                    <button type="button" id="clearCompleted" class="btn btn-outline-danger btn-sm" style="display: none;">
+                        Clear Completed
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom TypeScript (will be compiled to JS) -->
+    <script src="dist/app.js"></script>
+</body>
+</html>
