@@ -1,8 +1,8 @@
 /**
- * TodoList class with CRUD operations
+ * TodoList class with CRUD operations and validation
  */
 
-import { Todo, TodoFilter, TodoStats } from '../../types';
+import { Todo, TodoFilter, TodoStats, ValidationError } from '../../types';
 
 export class TodoList {
   private todos: Todo[] = [];
@@ -16,125 +16,219 @@ export class TodoList {
    * Add a new todo
    */
   addTodo(text: string): Todo {
-    const newTodo: Todo = {
-      id: this.generateId(),
-      text: text.trim(),
-      completed: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    try {
+      this.validateTodoText(text);
+      
+      const sanitizedText = this.sanitizeTodoText(text);
+      const newTodo: Todo = {
+        id: this.generateId(),
+        text: sanitizedText,
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
-    this.todos.push(newTodo);
-    return newTodo;
+      this.todos.push(newTodo);
+      return newTodo;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; // Re-throw validation errors as-is
+      }
+      throw new Error(`Failed to add todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Get all todos
    */
   getAllTodos(): Todo[] {
-    return [...this.todos];
+    try {
+      return [...this.todos];
+    } catch (error) {
+      throw new Error(`Failed to get todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Get todos based on current filter
    */
   getFilteredTodos(): Todo[] {
-    return this.filterTodos(this.todos, this.currentFilter);
+    try {
+      return this.filterTodos(this.todos, this.currentFilter);
+    } catch (error) {
+      throw new Error(`Failed to get filtered todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Get a specific todo by ID
    */
   getTodoById(id: string): Todo | undefined {
-    return this.todos.find(todo => todo.id === id);
+    try {
+      this.validateId(id);
+      return this.todos.find(todo => todo.id === id);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; // Re-throw validation errors as-is
+      }
+      throw new Error(`Failed to get todo by ID: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Update a todo
    */
   updateTodo(id: string, updates: Partial<Pick<Todo, 'text' | 'completed'>>): Todo | null {
-    const todoIndex = this.todos.findIndex(todo => todo.id === id);
-    
-    if (todoIndex === -1) {
-      return null;
+    try {
+      this.validateId(id);
+      
+      const todoIndex = this.todos.findIndex(todo => todo.id === id);
+      
+      if (todoIndex === -1) {
+        return null;
+      }
+
+      const todo = this.todos[todoIndex];
+      if (!todo) {
+        return null;
+      }
+      
+      // Validate text if it's being updated
+      if (updates.text !== undefined) {
+        this.validateTodoText(updates.text);
+        updates.text = this.sanitizeTodoText(updates.text);
+      }
+      
+      // Validate completed status if it's being updated
+      if (updates.completed !== undefined) {
+        this.validateCompletedStatus(updates.completed);
+      }
+
+      const updatedTodo: Todo = {
+        id: todo.id,
+        text: updates.text !== undefined ? updates.text : todo.text,
+        completed: updates.completed !== undefined ? updates.completed : todo.completed,
+        createdAt: todo.createdAt,
+        updatedAt: new Date()
+      };
+
+      this.todos[todoIndex] = updatedTodo;
+      return updatedTodo;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; // Re-throw validation errors as-is
+      }
+      throw new Error(`Failed to update todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    const todo = this.todos[todoIndex];
-    const updatedTodo: Todo = {
-      ...todo,
-      ...updates,
-      updatedAt: new Date()
-    };
-
-    this.todos[todoIndex] = updatedTodo;
-    return updatedTodo;
   }
 
   /**
    * Toggle todo completion status
    */
   toggleTodo(id: string): Todo | null {
-    const todo = this.getTodoById(id);
-    if (!todo) {
-      return null;
-    }
+    try {
+      this.validateId(id);
+      
+      const todo = this.getTodoById(id);
+      if (!todo) {
+        return null;
+      }
 
-    return this.updateTodo(id, { completed: !todo.completed });
+      return this.updateTodo(id, { completed: !todo.completed });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; // Re-throw validation errors as-is
+      }
+      throw new Error(`Failed to toggle todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Delete a todo
    */
   deleteTodo(id: string): boolean {
-    const todoIndex = this.todos.findIndex(todo => todo.id === id);
-    
-    if (todoIndex === -1) {
-      return false;
-    }
+    try {
+      this.validateId(id);
+      
+      const todoIndex = this.todos.findIndex(todo => todo.id === id);
+      
+      if (todoIndex === -1) {
+        return false;
+      }
 
-    this.todos.splice(todoIndex, 1);
-    return true;
+      this.todos.splice(todoIndex, 1);
+      return true;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; // Re-throw validation errors as-is
+      }
+      throw new Error(`Failed to delete todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Delete all completed todos
    */
   deleteCompletedTodos(): number {
-    const initialLength = this.todos.length;
-    this.todos = this.todos.filter(todo => !todo.completed);
-    return initialLength - this.todos.length;
+    try {
+      const initialLength = this.todos.length;
+      this.todos = this.todos.filter(todo => !todo.completed);
+      return initialLength - this.todos.length;
+    } catch (error) {
+      throw new Error(`Failed to delete completed todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Set the current filter
    */
   setFilter(filter: TodoFilter): void {
-    this.currentFilter = filter;
+    try {
+      this.validateFilter(filter);
+      this.currentFilter = filter;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error; // Re-throw validation errors as-is
+      }
+      throw new Error(`Failed to set filter: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Get the current filter
    */
   getCurrentFilter(): TodoFilter {
-    return this.currentFilter;
+    try {
+      return this.currentFilter;
+    } catch (error) {
+      throw new Error(`Failed to get current filter: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Get todo statistics
    */
   getStats(): TodoStats {
-    const total = this.todos.length;
-    const completed = this.todos.filter(todo => todo.completed).length;
-    const pending = total - completed;
+    try {
+      const total = this.todos.length;
+      const completed = this.todos.filter(todo => todo.completed).length;
+      const pending = total - completed;
 
-    return { total, completed, pending };
+      return { total, completed, pending };
+    } catch (error) {
+      throw new Error(`Failed to get todo statistics: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Clear all todos
    */
   clearAll(): void {
-    this.todos = [];
+    try {
+      this.todos = [];
+    } catch (error) {
+      throw new Error(`Failed to clear all todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
@@ -170,6 +264,68 @@ export class TodoList {
       case 'all':
       default:
         return todos;
+    }
+  }
+
+  /**
+   * Validation methods
+   */
+  
+  /**
+   * Validate todo text input
+   */
+  private validateTodoText(text: string): void {
+    if (!text || typeof text !== 'string') {
+      throw new ValidationError('Todo text is required');
+    }
+    
+    const trimmedText = text.trim();
+    if (trimmedText.length === 0) {
+      throw new ValidationError('Todo text cannot be empty');
+    }
+    
+    if (trimmedText.length > 200) {
+      throw new ValidationError('Todo text cannot exceed 200 characters');
+    }
+  }
+
+  /**
+   * Sanitize todo text (remove extra whitespace, trim)
+   */
+  private sanitizeTodoText(text: string): string {
+    return text.trim().replace(/\s+/g, ' ');
+  }
+
+  /**
+   * Validate todo ID
+   */
+  private validateId(id: string): void {
+    if (!id || typeof id !== 'string') {
+      throw new ValidationError('Todo ID is required');
+    }
+    
+    if (id.trim().length === 0) {
+      throw new ValidationError('Todo ID cannot be empty');
+    }
+  }
+
+  /**
+   * Validate completed status
+   */
+  private validateCompletedStatus(completed: boolean): void {
+    if (typeof completed !== 'boolean') {
+      throw new ValidationError('Completed status must be a boolean');
+    }
+  }
+
+  /**
+   * Validate filter type
+   */
+  private validateFilter(filter: TodoFilter): void {
+    const validFilters: TodoFilter[] = ['all', 'completed', 'pending'];
+    
+    if (!validFilters.includes(filter)) {
+      throw new ValidationError(`Invalid filter type. Must be one of: ${validFilters.join(', ')}`);
     }
   }
 }
