@@ -2,14 +2,16 @@
  * TodoList class with CRUD operations and validation
  */
 
-import { Todo, TodoFilter, TodoStats, ValidationError } from '../../types';
+import { Todo, TodoFilter, TodoStats, ValidationError, StorageError } from '../../types';
+import { StorageUtils } from '../../utils';
 
 export class TodoList {
   private todos: Todo[] = [];
   private currentFilter: TodoFilter = 'all';
 
   constructor() {
-    // Initialize empty todo list
+    // Initialize todo list with data from localStorage
+    this.loadFromStorage();
   }
 
   /**
@@ -29,6 +31,7 @@ export class TodoList {
       };
 
       this.todos.push(newTodo);
+      this.saveToStorage();
       return newTodo;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -113,6 +116,7 @@ export class TodoList {
       };
 
       this.todos[todoIndex] = updatedTodo;
+      this.saveToStorage();
       return updatedTodo;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -157,6 +161,7 @@ export class TodoList {
       }
 
       this.todos.splice(todoIndex, 1);
+      this.saveToStorage();
       return true;
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -173,6 +178,7 @@ export class TodoList {
     try {
       const initialLength = this.todos.length;
       this.todos = this.todos.filter(todo => !todo.completed);
+      this.saveToStorage();
       return initialLength - this.todos.length;
     } catch (error) {
       throw new Error(`Failed to delete completed todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -186,6 +192,7 @@ export class TodoList {
     try {
       this.validateFilter(filter);
       this.currentFilter = filter;
+      this.saveFilterToStorage();
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error; // Re-throw validation errors as-is
@@ -226,6 +233,7 @@ export class TodoList {
   clearAll(): void {
     try {
       this.todos = [];
+      this.saveToStorage();
     } catch (error) {
       throw new Error(`Failed to clear all todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -327,5 +335,116 @@ export class TodoList {
     if (!validFilters.includes(filter)) {
       throw new ValidationError(`Invalid filter type. Must be one of: ${validFilters.join(', ')}`);
     }
+  }
+
+  /**
+   * Storage methods for in-memory persistence
+   */
+  
+  /**
+   * Load todos from localStorage
+   */
+  private loadFromStorage(): void {
+    try {
+      this.todos = StorageUtils.loadTodos();
+      this.currentFilter = StorageUtils.loadFilter();
+    } catch (error) {
+      console.warn('Failed to load todos from storage:', error);
+      // Continue with empty state if storage fails
+      this.todos = [];
+      this.currentFilter = 'all';
+    }
+  }
+
+  /**
+   * Save todos to localStorage
+   */
+  private saveToStorage(): void {
+    try {
+      StorageUtils.saveTodos(this.todos);
+    } catch (error) {
+      throw new StorageError(`Failed to save todos to storage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Save filter preference to localStorage
+   */
+  private saveFilterToStorage(): void {
+    try {
+      StorageUtils.saveFilter(this.currentFilter);
+    } catch (error) {
+      throw new StorageError(`Failed to save filter to storage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Clear all data from storage
+   */
+  public clearStorage(): void {
+    try {
+      StorageUtils.clearAll();
+      this.todos = [];
+      this.currentFilter = 'all';
+    } catch (error) {
+      throw new StorageError(`Failed to clear storage: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Export todos to JSON string
+   */
+  public exportTodos(): string {
+    try {
+      return JSON.stringify(this.todos, null, 2);
+    } catch (error) {
+      throw new Error(`Failed to export todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Import todos from JSON string
+   */
+  public importTodos(jsonString: string): number {
+    try {
+      const importedTodos = JSON.parse(jsonString);
+      
+      if (!Array.isArray(importedTodos)) {
+        throw new Error('Invalid data format: expected an array of todos');
+      }
+
+      // Validate each todo
+      const validTodos: Todo[] = [];
+      for (const todo of importedTodos) {
+        if (this.isValidTodo(todo)) {
+          validTodos.push({
+            ...todo,
+            createdAt: new Date(todo.createdAt),
+            updatedAt: new Date(todo.updatedAt)
+          });
+        }
+      }
+
+      this.todos = validTodos;
+      this.saveToStorage();
+      return validTodos.length;
+    } catch (error) {
+      throw new Error(`Failed to import todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Validate todo object structure
+   */
+  private isValidTodo(todo: any): todo is Todo {
+    return (
+      typeof todo === 'object' &&
+      todo !== null &&
+      typeof todo.id === 'string' &&
+      typeof todo.text === 'string' &&
+      typeof todo.completed === 'boolean' &&
+      typeof todo.createdAt === 'string' &&
+      typeof todo.updatedAt === 'string'
+    );
   }
 }
