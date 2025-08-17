@@ -2,8 +2,8 @@
  * TodoList class with CRUD operations and validation
  */
 
-import { Todo, TodoFilter, TodoStats, ValidationError, StorageError } from '../../types';
-import { StorageUtils } from '../../utils';
+import { Todo, TodoFilter, TodoStats, ValidationError, StorageError } from './types';
+import { StorageUtils } from './utils';
 
 export class TodoList {
   private todos: Todo[] = [];
