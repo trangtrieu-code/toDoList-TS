@@ -194,7 +194,6 @@ export class TodoApp {
         >
         <label class="form-check-label flex-grow-1" for="todo-${todo.id}">
           <span class="todo-text">${this.escapeHtml(todo.text)}</span>
-          <small class="text-muted d-block">Created: ${this.formatDate(todo.createdAt)}</small>
         </label>
         <button 
           type="button" 
@@ -202,7 +201,7 @@ export class TodoApp {
           data-action="delete"
           title="Delete todo"
         >
-          🗑️
+          Delete
         </button>
       </div>
     `;
@@ -295,8 +294,8 @@ export class TodoApp {
 
     // Create new alert
     const alert = DOMUtils.createElement('div', {
-      'class': `alert alert-${type} alert-dismissible fade show position-fixed`,
-      'style': 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;'
+      'class': `alert alert-${type} alert-dismissible fade show`,
+      'style': 'position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;'
     });
 
     alert.innerHTML = `
