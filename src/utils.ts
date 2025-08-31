@@ -2,7 +2,7 @@
  * Utility functions for TodoList application
  */
 
-import { Todo, TodoStats, TodoFilter, ValidationError, StorageError } from './types';
+import { Todo, TodoStats, TodoFilter, ValidationError, StorageError } from './types.js';
 
 /**
  * Generate a unique ID for todo items

@@ -3,9 +3,9 @@
  * Handles UI components and event handlers
  */
 
-import { TodoList } from './TodoList';
-import { Todo, TodoFilter, ValidationError, StorageError, DOM_IDS, CSS_CLASSES } from './types';
-import { DOMUtils } from './utils';
+import { TodoList } from './TodoList.js';
+import { Todo, TodoFilter, ValidationError, StorageError, DOM_IDS, CSS_CLASSES } from './types.js';
+import { DOMUtils } from './utils.js';
 
 export class TodoApp {
   private todoList: TodoList;
@@ -45,6 +45,19 @@ export class TodoApp {
 
     // Filter buttons
     this.filterButtons = document.querySelectorAll('.filter-btn');
+
+    // Debug logging
+    console.log('DOM Elements initialized:', {
+      todoForm: !!this.todoForm,
+      todoInput: !!this.todoInput,
+      todoListContainer: !!this.todoListContainer,
+      emptyState: !!this.emptyState,
+      clearCompletedBtn: !!this.clearCompletedBtn,
+      totalTodosEl: !!this.totalTodosEl,
+      completedTodosEl: !!this.completedTodosEl,
+      pendingTodosEl: !!this.pendingTodosEl,
+      filterButtons: this.filterButtons?.length || 0
+    });
   }
 
   /**
@@ -68,18 +81,29 @@ export class TodoApp {
    */
   private handleAddTodo(event: Event): void {
     event.preventDefault();
+    console.log('Form submitted!');
     
-    if (!this.todoInput) return;
+    if (!this.todoInput) {
+      console.error('Todo input not found!');
+      return;
+    }
 
     const text = this.todoInput.value.trim();
-    if (!text) return;
+    console.log('Todo text:', text);
+    
+    if (!text) {
+      console.log('Empty text, not adding todo');
+      return;
+    }
 
     try {
       const newTodo = this.todoList.addTodo(text);
+      console.log('Todo added:', newTodo);
       this.todoInput.value = '';
       this.render();
       this.showSuccessMessage(`Todo "${newTodo.text}" added successfully!`);
     } catch (error) {
+      console.error('Error adding todo:', error);
       this.handleError(error, 'Failed to add todo');
     }
   }
@@ -285,32 +309,71 @@ export class TodoApp {
   }
 
   /**
-   * Show message with Bootstrap alert
+   * Show message with Bootstrap modal
    */
   private showMessage(message: string, type: 'success' | 'info' | 'danger'): void {
-    // Remove existing alerts
-    const existingAlerts = document.querySelectorAll('.alert');
-    existingAlerts.forEach(alert => alert.remove());
+    // Remove existing modals
+    const existingModals = document.querySelectorAll('#messageModal');
+    existingModals.forEach(modal => modal.remove());
 
-    // Create new alert
-    const alert = DOMUtils.createElement('div', {
-      'class': `alert alert-${type} alert-dismissible fade show`,
-      'style': 'position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;'
-    });
-
-    alert.innerHTML = `
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    // Create modal HTML
+    const modalHtml = `
+      <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-${type} text-white">
+              <h5 class="modal-title" id="messageModalLabel">
+                ${this.getModalTitle(type)}
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-0">${message}</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-${type}" data-bs-dismiss="modal">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
 
-    document.body.appendChild(alert);
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-    // Auto-remove after 3 seconds
-    setTimeout(() => {
-      if (alert.parentNode) {
-        alert.remove();
-      }
-    }, 3000);
+    // Show modal
+    const modalElement = document.getElementById('messageModal');
+    if (modalElement) {
+      const modal = new (window as any).bootstrap.Modal(modalElement);
+      modal.show();
+
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        modal.hide();
+        // Remove modal from DOM after hiding
+        setTimeout(() => {
+          if (modalElement.parentNode) {
+            modalElement.remove();
+          }
+        }, 300);
+      }, 3000);
+    }
+  }
+
+  /**
+   * Get modal title based on type
+   */
+  private getModalTitle(type: 'success' | 'info' | 'danger'): string {
+    switch (type) {
+      case 'success':
+        return '✅ Success';
+      case 'info':
+        return 'ℹ️ Information';
+      case 'danger':
+        return '❌ Error';
+      default:
+        return '📝 Message';
+    }
   }
 
   /**
